@@ -1,0 +1,9 @@
+aws_region              = "ap-south-1"
+source_bucket_name      = "bl-swatha-poc"
+destination_bucket_name = "bl-swatha-poc" # same bucket
+lambda_function_name    = "csv-to-parquet-processor"
+notification_email      = "swatha.manoharan@bootlabstech.com"
+lambda_s3_bucket        = "your-artifact-bucket"
+lambda_s3_key           = "lambda_code.zip"
+layer_s3_key            = "layer.zip"
+lambda_layer_name       = "your-layer-name"
