@@ -39,10 +39,10 @@ jobs:
 
 
       - name: Upload Lambda Layer to S3
-        run: aws s3 cp layer.zip s3://${{ secrets.ARTIFACT_BUCKET }}/layer.zip
+        run: aws s3 cp layer.zip s3://artifact-bucket-swatha17/layer.zip
 
       - name: Upload Lambda Code to S3
-        run: aws s3 cp lambda.zip s3://${{ secrets.ARTIFACT_BUCKET }}/lambda.zip
+        run: aws s3 cp lambda.zip s3://artifact-bucket-swatha17/lambda.zip
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
