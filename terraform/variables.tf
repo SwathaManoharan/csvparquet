@@ -59,3 +59,8 @@ variable "artifact_bucket_name" {
   type        = string
 }
 
+variable "ecr_image_uri" {
+  description = "ECR image URI for Lambda container"
+}
+
+

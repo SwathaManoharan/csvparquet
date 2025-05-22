@@ -97,13 +97,9 @@ resource "aws_lambda_layer_version" "dependencies" {
 # Lambda Function (from S3)
 resource "aws_lambda_function" "csv_to_parquet" {
   function_name = var.lambda_function_name
-  s3_bucket     = aws_s3_bucket.artifact.bucket
-  s3_key        = var.code_s3_key
+  package_type  = "Image"
+  image_uri     = var.ecr_image_uri
   role          = aws_iam_role.lambda_exec.arn
-  handler       = var.lambda_handler
-  runtime       = var.runtime
-
-  layers = [aws_lambda_layer_version.dependencies.arn]
 
   environment {
     variables = {
