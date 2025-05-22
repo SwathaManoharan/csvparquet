@@ -30,10 +30,10 @@ jobs:
           terraform_version: 1.5.7
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init terraform/
 
       - name: Terraform Apply (creates S3 buckets including artifact bucket)
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve terraform/
 
       - name: Set up Python
         uses: actions/setup-python@v4
