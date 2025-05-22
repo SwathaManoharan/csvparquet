@@ -61,6 +61,7 @@ variable "artifact_bucket_name" {
 
 variable "ecr_image_uri" {
   description = "ECR image URI for Lambda container"
+  default = "402181693603.dkr.ecr.ap-south-1.amazonaws.com/csv-to-parquet"
 }
 
 
