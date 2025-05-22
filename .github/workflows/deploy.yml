@@ -7,7 +7,6 @@ on:
 
 env:
   AWS_REGION: ap-south-1
-  ARTIFACT_BUCKET: artifact-bucket-swatha17
 
 jobs:
   deploy:
@@ -17,6 +16,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Create Python Layer (venv with pandas, pyarrow, boto3)
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install pandas pyarrow boto3
+          
+          mkdir -p layer/python
+          cp -r venv/lib/python3.9/site-packages/* layer/python/
+          cd layer
+          zip -r ../layer.zip .
+          cd ..
+          rm -rf venv layer
+
+      - name: Zip Lambda Function
+        run: |
+          zip lambda_function_payload.zip lambda_function.py
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -24,33 +46,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Create pandas Lambda Layer
-        run: |
-          mkdir -p pandas/python
-          pip install pandas -t pandas/python/ --no-cache-dir
-          zip -r pandas-layer.zip pandas
-          rm -rf pandas
-
-      - name: Create pyarrow Lambda Layer
-        run: |
-          mkdir -p pyarrow/python
-          pip install pyarrow -t pyarrow/python/ --no-cache-dir
-          zip -r pyarrow-layer.zip pyarrow
-          rm -rf pyarrow
-
-      - name: Upload Lambda Code and Layers to S3
-        run: |
-          aws s3 cp lambda.zip s3://${{ env.ARTIFACT_BUCKET }}/lambda.zip
-          aws s3 cp pandas-layer.zip s3://${{ env.ARTIFACT_BUCKET }}/pandas-layer.zip
-          aws s3 cp pyarrow-layer.zip s3://${{ env.ARTIFACT_BUCKET }}/pyarrow-layer.zip
-
-
-      - name: Setup Terraform
+      - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
@@ -60,24 +56,7 @@ jobs:
           cd terraform
           terraform init
 
-      - name: Terraform Apply Infra (Buckets, IAM, etc.)
-        run: |
-          cd terraform
-          terraform apply -auto-approve \
-            -target=aws_s3_bucket.artifact \
-            -target=aws_s3_bucket.source \
-            -target=aws_s3_bucket.destination \
-            -target=aws_ses_email_identity.email \
-            -target=aws_iam_role.lambda_exec \
-            -target=aws_iam_policy.lambda_policy \
-            -target=aws_iam_role_policy_attachment.lambda_attach
-
-      - name: Upload Lambda Code and Layer to S3
-        run: |
-          aws s3 cp lambda.zip s3://${{ env.ARTIFACT_BUCKET }}/lambda.zip
-          aws s3 cp layer.zip s3://${{ env.ARTIFACT_BUCKET }}/layer.zip
-
-      - name: Terraform Apply Full (Lambda + Trigger)
+      - name: Terraform Apply (Infra + Lambda + Layer)
         run: |
           cd terraform
           terraform apply -auto-approve

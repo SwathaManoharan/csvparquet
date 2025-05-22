@@ -1,12 +1,7 @@
 variable "aws_region" {}
-variable "artifact_bucket_name" {}
 variable "source_bucket_name" {}
 variable "destination_bucket_name" {}
 variable "notification_email" {}
 variable "lambda_function_name" {}
 variable "runtime" {}
-variable "lambda_s3_key" {}
-variable "layer_s3_key" {}
-variable "pandas_layer_s3_key" {}
 variable "layer_name" {}
-variable "pyarrow_layer_s3_key" {}

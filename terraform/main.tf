@@ -1,19 +1,4 @@
 
-
-# Artifact bucket
-resource "aws_s3_bucket" "artifact" {
-  bucket = var.artifact_bucket_name
-
-  versioning {
-    enabled = true
-  }
-
-
-  tags = {
-    Name = "Artifact Bucket"
-  }
-}
-
 # Source and Destination Buckets
 resource "aws_s3_bucket" "source" {
   bucket = var.source_bucket_name
@@ -57,13 +42,13 @@ resource "aws_iam_policy" "lambda_policy" {
         ]
       },
       {
-        Effect = "Allow",
-        Action = ["ses:SendEmail", "ses:SendRawEmail"],
+        Effect   = "Allow",
+        Action   = ["ses:SendEmail", "ses:SendRawEmail"],
         Resource = "*"
       },
       {
-        Effect = "Allow",
-        Action = ["logs:*"],
+        Effect   = "Allow",
+        Action   = ["logs:*"],
         Resource = "*"
       }
     ]
@@ -75,32 +60,23 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
   policy_arn = aws_iam_policy.lambda_policy.arn
 }
 
-# Lambda Layer from S3
-resource "aws_lambda_layer_version" "pandas_layer" {
-  layer_name          = "${var.layer_name}-pandas"
+
+resource "aws_lambda_layer_version" "layer" {
+  filename            = "layer.zip"
+  layer_name          = "${var.layer_name}-layer"
   compatible_runtimes = [var.runtime]
-  s3_bucket           = aws_s3_bucket.artifact.bucket
-  s3_key              = var.pandas_layer_s3_key
+  source_code_hash    = filebase64sha256("layer.zip")
 }
 
-# Lambda Layer 2: pyarrow
-resource "aws_lambda_layer_version" "pyarrow_layer" {
-  layer_name          = "${var.layer_name}-pyarrow"
-  compatible_runtimes = [var.runtime]
-  s3_bucket           = aws_s3_bucket.artifact.bucket
-  s3_key              = var.pyarrow_layer_s3_key
-}
 # Lambda Function from zip
 resource "aws_lambda_function" "csv_to_parquet" {
+  filename      = "lambda_function_payload.zip"
   function_name = var.lambda_function_name
   runtime       = var.runtime
   handler       = "lambda_function.lambda_handler"
   role          = aws_iam_role.lambda_exec.arn
-  s3_bucket     = aws_s3_bucket.artifact.bucket
-  s3_key        = var.lambda_s3_key
   layers = [
-    aws_lambda_layer_version.pandas_layer.arn,
-    aws_lambda_layer_version.pyarrow_layer.arn
+    aws_lambda_layer_version.layer.arn
   ]
 
   environment {
@@ -110,6 +86,8 @@ resource "aws_lambda_function" "csv_to_parquet" {
     }
   }
 }
+
+
 
 # Lambda permission for S3 trigger
 resource "aws_lambda_permission" "allow_s3" {
