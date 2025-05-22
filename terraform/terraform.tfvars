@@ -1,5 +1,5 @@
 aws_region           = "ap-south-1"
-artifact_bucket_name = "artifact-bucket-swatha1727"
+artifact_bucket_name = "artifact-bucket-swatha17"
 source_bucket_name   = "source-bucket-swatha1727"
 destination_bucket_name = "destination-bucket-swatha1727"
 notification_email   = "swatha.manoharan@bootlabstech.com"

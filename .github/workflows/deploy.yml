@@ -7,7 +7,9 @@ on:
 
 env:
   AWS_REGION: ap-south-1
-  ARTIFACT_BUCKET: artifact-bucket-swatha1727
+  ARTIFACT_BUCKET: artifact-bucket-swatha17
+  ECR_REPO: csv-to-parquet        # Added repository name here
+  IMAGE_TAG: latest               # Added tag here
 
 jobs:
   deploy:
@@ -31,10 +33,10 @@ jobs:
       - name: Build and Push Docker image to ECR
         run: |
           IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
+          echo "IMAGE URI: $IMAGE_URI"
           docker build -t $IMAGE_URI ./lambda_function
           docker push $IMAGE_URI
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-
 
       - name: Set up Python
         uses: actions/setup-python@v4
