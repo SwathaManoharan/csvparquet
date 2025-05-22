@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: ap-south-1
-  ARTIFACT_BUCKET: artifact-bucket-swatha17
+  ARTIFACT_BUCKET: artifact-bucket-swatha1727
 
 jobs:
   deploy:
