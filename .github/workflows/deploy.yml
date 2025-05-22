@@ -21,19 +21,19 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Create Python Layer (venv with pandas, pyarrow, boto3)
+      - name: Create pandas+boto3 Lambda Layer
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install pandas pyarrow boto3
-          
-          mkdir -p layer/python
-          cp -r venv/lib/python3.9/site-packages/* layer/python/
-          cd layer
-          zip -r ../layer.zip .
-          cd ..
-          rm -rf venv layer
+          mkdir -p layer1/python
+          pip install pandas boto3 -t layer1/python --no-cache-dir
+          zip -r layer1.zip layer1
+          rm -rf layer1
+
+      - name: Create pyarrow Lambda Layer
+        run: |
+            mkdir -p layer2/python
+            pip install pyarrow -t layer2/python --no-cache-dir
+            zip -r layer2.zip layer2
+            rm -rf layer2
 
       - name: Zip Lambda Function
         run: |
@@ -58,7 +58,7 @@ jobs:
 
       - name: Move ZIP files to Terraform folder
         run: |
-          mv layer.zip lambda_function_payload.zip terraform/
+          mv lambda_function_payload.zip layer1.zip layer2.zip terraform/
 
 
       - name: Terraform Apply (Infra + Lambda + Layer)
