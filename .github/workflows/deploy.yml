@@ -1,73 +1,55 @@
-name: Deploy Lambda & Layer to AWS
+name: Deploy Lambda with Terraform
 
 on:
   push:
     branches:
       - main
 
+env:
+  AWS_REGION: ap-south-1
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      AWS_REGION: ap-south-1
-      LAMBDA_NAME: csv-to-parquet-processor
-      DEST_BUCKET: swatha-source-csv-bucket
-      LAYER_NAME: your-layer-name
-      S3_ARTIFACT_BUCKET: your-artifact-bucket
-
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Install dependencies for layer
-      run: |
-        pip install -r requirements.txt -t python
-        zip -r layer.zip python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: Zip Lambda function
-      run: |
-        zip -r lambda_code.zip lambda_function/*.py
+      - name: Install dependencies for Lambda Layer
+        run: |
+          mkdir -p python
+          pip install -r requirements.txt -t python/
+          zip -r layer.zip python
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Zip Lambda function code
+        run: zip -r lambda.zip lambda_function.py
 
-    - name: Upload layer.zip to S3
-      run: |
-        aws s3 cp layer.zip s3://${{ env.S3_ARTIFACT_BUCKET }}/layer.zip
+      - name: Upload Lambda Layer to S3
+        run: aws s3 cp layer.zip s3://${{ secrets.ARTIFACT_BUCKET }}/layer.zip
 
-    - name: Upload lambda_code.zip to S3
-      run: |
-        aws s3 cp lambda_code.zip s3://${{ env.S3_ARTIFACT_BUCKET }}/lambda_code.zip
+      - name: Upload Lambda Code to S3
+        run: aws s3 cp lambda.zip s3://${{ secrets.ARTIFACT_BUCKET }}/lambda.zip
 
-    - name: Publish new Lambda Layer version
-      id: publish_layer
-      run: |
-        LAYER_VERSION=$(aws lambda publish-layer-version \
-          --layer-name $LAYER_NAME \
-          --content S3Bucket=$S3_ARTIFACT_BUCKET,S3Key=layer.zip \
-          --compatible-runtimes python3.9 \
-          --query Version --output text)
-        echo "layer_version=$LAYER_VERSION" >> $GITHUB_OUTPUT
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
 
-    - name: Update Lambda function code
-      run: |
-        aws lambda update-function-code \
-          --function-name $LAMBDA_NAME \
-          --s3-bucket $S3_ARTIFACT_BUCKET \
-          --s3-key lambda_code.zip
+      - name: Terraform Init
+        run: terraform init
 
-    - name: Update Lambda to use new Layer
-      run: |
-        aws lambda update-function-configuration \
-          --function-name $LAMBDA_NAME \
-          --layers arn:aws:lambda:$AWS_REGION:${{ secrets.AWS_ACCOUNT_ID }}:layer:$LAYER_NAME:${{ steps.publish_layer.outputs.layer_version }}
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
