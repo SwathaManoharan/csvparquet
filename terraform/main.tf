@@ -1,6 +1,25 @@
 provider "aws" {
   region = var.aws_region
 }
+resource "aws_s3_bucket" "artifact" {
+  bucket = var.artifact_bucket_name
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    enabled = true
+    expiration {
+      days = 30
+    }
+  }
+
+  tags = {
+    Name = "Artifact Bucket"
+  }
+}
+
 
 # Artifact Bucket (to hold Lambda code and layer)
 resource "aws_s3_bucket" "artifact" {

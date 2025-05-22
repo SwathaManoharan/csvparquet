@@ -57,3 +57,8 @@ variable "code_s3_key" {
   type        = string
   default     = "lambda.zip"
 }
+variable "artifact_bucket_name" {
+  description = "S3 bucket name for storing Lambda artifacts"
+  type        = string
+}
+
