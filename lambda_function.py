@@ -1,8 +1,7 @@
 import boto3
 import os
-import pandas as pd
 import io
-import pyarrow as pa
+import pyarrow.csv as pv
 import pyarrow.parquet as pq
 
 s3 = boto3.client('s3')
@@ -16,22 +15,24 @@ def lambda_handler(event, context):
         src_bucket = record['s3']['bucket']['name']
         src_key = record['s3']['object']['key']
 
-        # Get CSV from source bucket
+        # Download CSV from S3
         response = s3.get_object(Bucket=src_bucket, Key=src_key)
-        csv_content = response['Body'].read().decode('utf-8')
-        df = pd.read_csv(io.StringIO(csv_content))
+        csv_content = response['Body'].read()
+
+        # Convert CSV to Arrow Table (without pandas)
+        table = pv.read_csv(io.BytesIO(csv_content))
 
         # Convert to Parquet
-        table = pa.Table.from_pandas(df)
         parquet_buffer = io.BytesIO()
         pq.write_table(table, parquet_buffer)
 
-        parquet_key = src_key.replace('.csv', '.parquet')
+        # Create new key with .parquet extension
+        parquet_key = src_key.rsplit('.', 1)[0] + '.parquet'
 
-        # Upload to destination bucket (same as source in your case)
+        # Upload to destination bucket
         s3.put_object(Bucket=dest_bucket, Key=parquet_key, Body=parquet_buffer.getvalue())
 
-        # Send SES email
+        # Send SES notification
         ses.send_email(
             Source=email,
             Destination={'ToAddresses': [email]},
