@@ -98,7 +98,7 @@ resource "aws_lambda_layer_version" "dependencies" {
 resource "aws_lambda_function" "csv_to_parquet" {
   function_name = var.lambda_function_name
   package_type  = "Image"
-  image_uri     = var.ecr_image_uri
+  image_uri     = "402181693603.dkr.ecr.ap-south-1.amazonaws.com/csv-to-parquet"
   role          = aws_iam_role.lambda_exec.arn
 
   environment {
