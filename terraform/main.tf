@@ -64,16 +64,24 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 resource "aws_lambda_layer_version" "layer1" {
   filename             = "layer1.zip"
   source_code_hash     = filebase64sha256("layer1.zip")
-  layer_name           = "${var.layer_name}-layer1"
+  layer_name           = "${var.layer_name}-pandas"
   compatible_runtimes  = [var.runtime]
 }
 
 resource "aws_lambda_layer_version" "layer2" {
   filename             = "layer2.zip"
   source_code_hash     = filebase64sha256("layer2.zip")
-  layer_name           = "${var.layer_name}-layer2"
+  layer_name           = "${var.layer_name}-pyarrow"
   compatible_runtimes  = [var.runtime]
 }
+
+resource "aws_lambda_layer_version" "layer3" {
+  filename             = "layer3.zip"
+  source_code_hash     = filebase64sha256("layer3.zip")
+  layer_name           = "${var.layer_name}-boto3"
+  compatible_runtimes  = [var.runtime]
+}
+
 
 
 # Lambda Function from zip
@@ -85,8 +93,10 @@ resource "aws_lambda_function" "csv_to_parquet" {
   role          = aws_iam_role.lambda_exec.arn
   layers = [
     aws_lambda_layer_version.layer1.arn,
-    aws_lambda_layer_version.layer2.arn
+    aws_lambda_layer_version.layer2.arn,
+    aws_lambda_layer_version.layer3.arn
   ]
+
 
   environment {
     variables = {

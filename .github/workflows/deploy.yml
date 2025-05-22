@@ -21,19 +21,27 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Create pandas+boto3 Lambda Layer
+      - name: Create pandas Lambda Layer
         run: |
           mkdir -p layer1/python
-          pip install pandas boto3 -t layer1/python --no-cache-dir
+          pip install pandas -t layer1/python --no-cache-dir
           zip -r layer1.zip layer1
           rm -rf layer1
 
       - name: Create pyarrow Lambda Layer
         run: |
-            mkdir -p layer2/python
-            pip install pyarrow -t layer2/python --no-cache-dir
-            zip -r layer2.zip layer2
-            rm -rf layer2
+          mkdir -p layer2/python
+          pip install pyarrow -t layer2/python --no-cache-dir
+          zip -r layer2.zip layer2
+          rm -rf layer2
+
+      - name: Create boto3 Lambda Layer
+        run: |
+          mkdir -p layer3/python
+          pip install boto3 -t layer3/python --no-cache-dir
+          zip -r layer3.zip layer3
+          rm -rf layer3
+
 
       - name: Zip Lambda Function
         run: |
@@ -57,9 +65,9 @@ jobs:
           terraform init
 
       - name: Move ZIP files to Terraform folder
+   
         run: |
-          mv lambda_function_payload.zip layer1.zip layer2.zip terraform/
-
+            mv lambda_function_payload.zip layer1.zip layer2.zip layer3.zip terraform/
 
       - name: Terraform Apply (Infra + Lambda + Layer)
         run: |
