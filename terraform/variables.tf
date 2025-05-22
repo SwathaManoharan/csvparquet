@@ -4,10 +4,7 @@ variable "aws_region" {
   default     = "ap-south-1"
 }
 
-variable "artifact_bucket" {
-  description = "S3 bucket to store Lambda code and layer zips"
-  type        = string
-}
+
 
 variable "source_bucket_name" {
   description = "Source S3 bucket name"
