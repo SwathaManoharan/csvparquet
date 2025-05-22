@@ -76,13 +76,20 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 }
 
 # Lambda Layer from S3
-resource "aws_lambda_layer_version" "dependencies" {
-  layer_name          = var.layer_name
+resource "aws_lambda_layer_version" "pandas_layer" {
+  layer_name          = "${var.layer_name}-pandas"
   compatible_runtimes = [var.runtime]
   s3_bucket           = aws_s3_bucket.artifact.bucket
-  s3_key              = var.layer_s3_key
+  s3_key              = var.pandas_layer_s3_key
 }
 
+# Lambda Layer 2: pyarrow
+resource "aws_lambda_layer_version" "pyarrow_layer" {
+  layer_name          = "${var.layer_name}-pyarrow"
+  compatible_runtimes = [var.runtime]
+  s3_bucket           = aws_s3_bucket.artifact.bucket
+  s3_key              = var.pyarrow_layer_s3_key
+}
 # Lambda Function from zip
 resource "aws_lambda_function" "csv_to_parquet" {
   function_name = var.lambda_function_name
@@ -91,7 +98,10 @@ resource "aws_lambda_function" "csv_to_parquet" {
   role          = aws_iam_role.lambda_exec.arn
   s3_bucket     = aws_s3_bucket.artifact.bucket
   s3_key        = var.lambda_s3_key
-  layers        = [aws_lambda_layer_version.dependencies.arn]
+  layers = [
+    aws_lambda_layer_version.pandas_layer.arn,
+    aws_lambda_layer_version.pyarrow_layer.arn
+  ]
 
   environment {
     variables = {

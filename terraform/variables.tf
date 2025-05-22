@@ -7,4 +7,6 @@ variable "lambda_function_name" {}
 variable "runtime" {}
 variable "lambda_s3_key" {}
 variable "layer_s3_key" {}
+variable "pandas_layer_s3_key" {}
 variable "layer_name" {}
+variable "pyarrow_layer_s3_key" {}
