@@ -1,91 +1,72 @@
-# name: Deploy Lambda with Terraform
+name: Deploy Lambda with Terraform
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
 
-# env:
-#   AWS_REGION: ap-south-1
-#   ARTIFACT_BUCKET: artifact-bucket-swatha17
-#   ECR_REPO: csv-to-parquet        # Added repository name here
-#   IMAGE_TAG: latest               # Added tag here
+env:
+  AWS_REGION: ap-south-1
+  ARTIFACT_BUCKET: artifact-bucket-swatha17
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout repo
-#         uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v2
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-#       - name: Login to Amazon ECR
-#         id: login-ecr
-#         uses: aws-actions/amazon-ecr-login@v1
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-#       - name: Build and Push Docker image to ECR
-#         run: |
-#           IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
-#           echo "IMAGE URI: $IMAGE_URI"
-#           docker build -t $IMAGE_URI ./lambda_function
-#           docker push $IMAGE_URI
-#           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+      - name: Create Lambda Layer from requirements.txt
+        run: |
+          mkdir -p python
+          pip install -r requirements.txt -t python/
+          zip -r layer.zip python
+          rm -rf python
 
-#       - name: Set up Python
-#         uses: actions/setup-python@v4
-#         with:
-#           python-version: '3.9'
+      - name: Zip Lambda Function
+        run: zip -r lambda.zip lambda_function/
 
-#       - name: Install dependencies for Lambda Layer
-#         run: |
-#           mkdir -p python
-#           pip install -r requirements.txt -t python/
-#           zip -r layer.zip python
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
 
-#       - name: Zip Lambda function code
-#         run: zip -r lambda.zip lambda_function/lambda_function.py
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init
 
-#       - name: Setup Terraform
-#         uses: hashicorp/setup-terraform@v2
-#         with:
-#           terraform_version: 1.5.7
+      - name: Terraform Apply Infra (Buckets, IAM, etc.)
+        run: |
+          cd terraform
+          terraform apply -auto-approve \
+            -target=aws_s3_bucket.artifact \
+            -target=aws_s3_bucket.source \
+            -target=aws_s3_bucket.destination \
+            -target=aws_ses_email_identity.email \
+            -target=aws_iam_role.lambda_exec \
+            -target=aws_iam_policy.lambda_policy \
+            -target=aws_iam_role_policy_attachment.lambda_attach
 
-#       - name: Terraform Init (just infra bucket first time)
-#         run: |
-#           cd terraform
-#           terraform init
+      - name: Upload Lambda Code and Layer to S3
+        run: |
+          aws s3 cp lambda.zip s3://${{ env.ARTIFACT_BUCKET }}/lambda.zip
+          aws s3 cp layer.zip s3://${{ env.ARTIFACT_BUCKET }}/layer.zip
 
-#       - name: Terraform plan (just infra bucket first time)
-#         run: |
-#           cd terraform
-#           terraform plan
-
-#       - name: Terraform Apply (create infra - buckets, roles, etc.)
-#         run: |
-#           cd terraform
-#           terraform apply -auto-approve \
-#             -target=aws_s3_bucket.artifact \
-#             -target=aws_s3_bucket.source \
-#             -target=aws_s3_bucket.destination \
-#             -target=aws_ses_email_identity.email \
-#             -target=aws_iam_role.lambda_exec \
-#             -target=aws_iam_policy.lambda_policy \
-#             -target=aws_iam_role_policy_attachment.lambda_attach
-
-#       - name: Upload Lambda Layer to S3
-#         run: aws s3 cp layer.zip s3://${{ env.ARTIFACT_BUCKET }}/layer.zip
-
-#       - name: Upload Lambda Code to S3
-#         run: aws s3 cp lambda.zip s3://${{ env.ARTIFACT_BUCKET }}/lambda.zip
-
-#       - name: Terraform Apply (full with Lambda + Layer)
-#         run: |
-#           cd terraform
-#           terraform apply -auto-approve
+      - name: Terraform Apply Full (Lambda + Trigger)
+        run: |
+          cd terraform
+          terraform apply -auto-approve
