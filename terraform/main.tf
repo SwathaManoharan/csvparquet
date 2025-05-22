@@ -1,4 +1,8 @@
+provider "aws" {
+  region = var.aws_region
+}
 
+# Artifact bucket
 resource "aws_s3_bucket" "artifact" {
   bucket = var.artifact_bucket_name
 
@@ -6,20 +10,11 @@ resource "aws_s3_bucket" "artifact" {
     enabled = true
   }
 
-  lifecycle_rule {
-    enabled = true
-    expiration {
-      days = 30
-    }
-  }
 
   tags = {
     Name = "Artifact Bucket"
   }
 }
-
-
-
 
 # Source and Destination Buckets
 resource "aws_s3_bucket" "source" {
@@ -30,12 +25,12 @@ resource "aws_s3_bucket" "destination" {
   bucket = var.destination_bucket_name
 }
 
-# SES Email Identity
+# SES Email
 resource "aws_ses_email_identity" "email" {
   email = var.notification_email
 }
 
-# IAM Role for Lambda
+# IAM Role and Policy
 resource "aws_iam_role" "lambda_exec" {
   name = "${var.lambda_function_name}-role"
   assume_role_policy = jsonencode({
@@ -50,7 +45,6 @@ resource "aws_iam_role" "lambda_exec" {
   })
 }
 
-# IAM Policy for Lambda
 resource "aws_iam_policy" "lambda_policy" {
   name = "${var.lambda_function_name}-policy"
   policy = jsonencode({
@@ -58,10 +52,7 @@ resource "aws_iam_policy" "lambda_policy" {
     Statement = [
       {
         Effect = "Allow",
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject"
-        ],
+        Action = ["s3:GetObject", "s3:PutObject"],
         Resource = [
           "arn:aws:s3:::${var.source_bucket_name}/*",
           "arn:aws:s3:::${var.destination_bucket_name}/*"
@@ -86,7 +77,7 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
   policy_arn = aws_iam_policy.lambda_policy.arn
 }
 
-# Lambda Layer (from S3)
+# Lambda Layer from S3
 resource "aws_lambda_layer_version" "dependencies" {
   layer_name          = var.layer_name
   compatible_runtimes = [var.runtime]
@@ -94,12 +85,15 @@ resource "aws_lambda_layer_version" "dependencies" {
   s3_key              = var.layer_s3_key
 }
 
-# Lambda Function (from S3)
+# Lambda Function from zip
 resource "aws_lambda_function" "csv_to_parquet" {
   function_name = var.lambda_function_name
-  package_type  = "Image"
-  image_uri     = "402181693603.dkr.ecr.ap-south-1.amazonaws.com/csv-to-parquet"
+  runtime       = var.runtime
+  handler       = "lambda_function.lambda_handler"
   role          = aws_iam_role.lambda_exec.arn
+  s3_bucket     = aws_s3_bucket.artifact.bucket
+  s3_key        = var.lambda_s3_key
+  layers        = [aws_lambda_layer_version.dependencies.arn]
 
   environment {
     variables = {
@@ -118,7 +112,7 @@ resource "aws_lambda_permission" "allow_s3" {
   source_arn    = aws_s3_bucket.source.arn
 }
 
-# S3 trigger for Lambda on CSV upload
+# S3 trigger
 resource "aws_s3_bucket_notification" "notify" {
   bucket = aws_s3_bucket.source.id
 
