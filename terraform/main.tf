@@ -21,10 +21,7 @@ resource "aws_s3_bucket" "artifact" {
 }
 
 
-# Artifact Bucket (to hold Lambda code and layer)
-resource "aws_s3_bucket" "artifact" {
-  bucket = var.artifact_bucket
-}
+
 
 # Source and Destination Buckets
 resource "aws_s3_bucket" "source" {
