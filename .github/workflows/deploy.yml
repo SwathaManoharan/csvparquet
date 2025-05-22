@@ -28,22 +28,6 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies for Lambda Layer
-        run: |
-          mkdir -p python
-          pip install -r requirements.txt -t python/
-          zip -r layer.zip python
-
-      - name: Zip Lambda function code
-        run: zip -r lambda.zip lambda_function/lambda_function.py
-
-
-      - name: Upload Lambda Layer to S3
-        run: aws s3 cp layer.zip s3://artifact-bucket-swatha17/layer.zip
-
-      - name: Upload Lambda Code to S3
-        run: aws s3 cp lambda.zip s3://artifact-bucket-swatha17/lambda.zip
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
@@ -54,3 +38,18 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
+
+      - name: Install dependencies for Lambda Layer
+        run: |
+          mkdir -p python
+          pip install -r requirements.txt -t python/
+          zip -r layer.zip python
+
+      - name: Zip Lambda function code
+        run: zip -r lambda.zip lambda_function/lambda_function.py
+
+      - name: Upload Lambda Layer to S3
+        run: aws s3 cp layer.zip s3://artifact-bucket-swatha17/layer.zip
+
+      - name: Upload Lambda Code to S3
+        run: aws s3 cp lambda.zip s3://artifact-bucket-swatha17/lambda.zip
