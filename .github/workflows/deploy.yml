@@ -35,7 +35,8 @@ jobs:
           zip -r layer.zip python
 
       - name: Zip Lambda function code
-        run: zip -r lambda.zip lambda_function.py
+        run: zip -r lambda.zip lambda_function/lambda_function.py
+
 
       - name: Upload Lambda Layer to S3
         run: aws s3 cp layer.zip s3://${{ secrets.ARTIFACT_BUCKET }}/layer.zip
