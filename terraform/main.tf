@@ -1,6 +1,4 @@
-provider "aws" {
-  region = var.aws_region
-}
+
 
 # Artifact bucket
 resource "aws_s3_bucket" "artifact" {
