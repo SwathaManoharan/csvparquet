@@ -38,6 +38,11 @@ jobs:
       - name: Zip Lambda function code
         run: zip -r lambda.zip lambda_function/lambda_function.py
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
       - name: Terraform Init (just infra bucket first time)
         run: |
           cd terraform
