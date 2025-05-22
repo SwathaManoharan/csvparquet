@@ -62,7 +62,7 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 
 
 resource "aws_lambda_layer_version" "layer" {
-  filename            = "../layer.zip"
+  filename            = "layer.zip"
   layer_name          = "${var.layer_name}-layer"
   compatible_runtimes = [var.runtime]
   source_code_hash    = filebase64sha256("layer.zip")
@@ -70,7 +70,7 @@ resource "aws_lambda_layer_version" "layer" {
 
 # Lambda Function from zip
 resource "aws_lambda_function" "csv_to_parquet" {
-  filename      = "../lambda_function_payload.zip"
+  filename      = "lambda_function_payload.zip"
   function_name = var.lambda_function_name
   runtime       = var.runtime
   handler       = "lambda_function.lambda_handler"
