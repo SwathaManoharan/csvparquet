@@ -62,6 +62,11 @@ jobs:
           cd terraform
           terraform init
 
+      - name: Terraform plan (just infra bucket first time)
+        run: |
+          cd terraform
+          terraform plan
+
       - name: Terraform Apply (create infra - buckets, roles, etc.)
         run: |
           cd terraform
