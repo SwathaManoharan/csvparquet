@@ -56,6 +56,11 @@ jobs:
           cd terraform
           terraform init
 
+      - name: Move ZIP files to Terraform folder
+        run: |
+          mv layer.zip lambda_function_payload.zip terraform/
+
+
       - name: Terraform Apply (Infra + Lambda + Layer)
         run: |
           cd terraform
