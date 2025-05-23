@@ -21,15 +21,7 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Create pyarrow Lambda Layer
-        run: |
-          mkdir -p layer/python/lib/python3.9/site-packages
-          pip install pyarrow -t layer/python/lib/python3.9/site-packages
-          cd layer
-          zip -r ../layer.zip .
-          cd ..
-          rm -rf layer
-
+     
 
       - name: Zip Lambda Function
         run: |
@@ -55,9 +47,9 @@ jobs:
       - name: Move ZIP files to Terraform folder
    
         run: |
-            mv lambda_function_payload.zip layer.zip  terraform/
+            mv lambda_function_payload.zip terraform/
 
-      - name: Terraform Apply (Infra + Lambda + Layer)
+      - name: Terraform Apply (Infra + Lambda )
         run: |
           cd terraform
           terraform apply -auto-approve
