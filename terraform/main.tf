@@ -63,7 +63,7 @@ resource "aws_iam_role_policy_attachment" "lambda_attach" {
 
 resource "aws_lambda_layer_version" "layer" {
   filename             = "layer.zip"
-  source_code_hash     = filebase64sha256("layer1.zip")
+  source_code_hash     = filebase64sha256("layer.zip")
   layer_name           = "${var.layer_name}-boto3,pyarrow"
   compatible_runtimes  = [var.runtime]
 }
