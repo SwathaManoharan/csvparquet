@@ -21,12 +21,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Create boto3 Lambda Layer
+      - name: Create pyarrow Lambda Layer
         run: |
-          mkdir -p layer/python
-          pip install boto3 pyarrow -t layer/python/lib/python3.9/site-packages
-          zip -r layer.zip layer
-          rm -rf layer
+          mkdir -p layer/python/lib/python3.9/site-packages
+          pip install pyarrow -t layer/python/lib/python3.9/site-packages
+          cd layer
+          zip -r ../pyarrow-layer.zip .
 
       - name: Zip Lambda Function
         run: |
