@@ -26,7 +26,10 @@ jobs:
           mkdir -p layer/python/lib/python3.9/site-packages
           pip install pyarrow -t layer/python/lib/python3.9/site-packages
           cd layer
-          zip -r ../pyarrow-layer.zip .
+          zip -r ../layer.zip .
+          cd ..
+          rm -rf layer
+
 
       - name: Zip Lambda Function
         run: |
